@@ -709,6 +709,11 @@ class FootstepsDriver(object):
         self.lastFootstepPlan.footsteps[ndx+2].fixed_x = True
         self.lastFootstepPlan.footsteps[ndx+2].fixed_y = True
         self.lastFootstepPlan.footsteps[ndx+2].fixed_yaw = True
+
+        #enables full control of footstep location
+        self.lastFootstepPlan.footsteps[ndx+2].fixed_roll = True
+        self.lastFootstepPlan.footsteps[ndx+2].fixed_pitch = True
+        self.lastFootstepPlan.footsteps[ndx+2].fixed_z = True
         self.sendUpdatePlanRequest()
 
     def sendUpdatePlanRequest(self):
