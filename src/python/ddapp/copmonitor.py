@@ -40,11 +40,17 @@ class COPMonitor(object):
         vis.updatePolyData(d.getPolyData(), 'measured cop', view=self.view, parent='robot state model')
         om.findObjectByName('measured cop').setProperty('Visible', False)
 
+        vis.updatePolyData(d.getPolyData(), 'measured cop right', view=self.view, parent='robot state model')
+        om.findObjectByName('measured cop right').setProperty('Visible', False)
+
+        vis.updatePolyData(d.getPolyData(), 'measured cop left', view=self.view, parent='robot state model')
+        om.findObjectByName('measured cop left').setProperty('Visible', False)
+
         
         self.robotStateModel.connectModelChanged(self.update)
 
     def update(self, unused):
-        if (om.findObjectByName('measured cop').getProperty('Visible') and self.robotStateJointController.lastRobotStateMessage):
+        if (om.findObjectByName('measured cop').getProperty('Visible') and self.robotStateJointController.lastRobotStateMessage or om.findObjectByName('measured cop right').getProperty('Visible') or om.findObjectByName('measured cop left').getProperty('Visible')):
 
             if self.dialogVisible == False:
                 self.warningButton.setVisible(True)
@@ -77,6 +83,12 @@ class COPMonitor(object):
                 measured_cop = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.lFootFtFrameId, self.rFootFtFrameId], 
                                 lFootFt + rFootFt, [0., 0., 1.], (self.rightInContact*rFootOrigin+self.leftInContact*lFootOrigin)/(self.leftInContact + self.rightInContact))
 
+                measured_cop_right = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.rFootFtFrameId], rFootFt, [0.0, 0.0, 1.0], rFootOrigin)
+
+                measured_cop_left = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.lFootFtFrameId], lFootFt, [0.0, 0.0, 1.0], lFootOrigin)
+
+
+
                 allFootContacts = np.empty([0, 2])
                 if self.rightInContact:
                     rFootContacts = np.array([rFootTransform.TransformPoint(contact_point) for contact_point in self.LONG_FOOT_CONTACT_POINTS])
@@ -102,6 +114,27 @@ class COPMonitor(object):
                 d = DebugData()
                 d.addSphere(measured_cop[0:3], radius=0.02)
                 vis.updatePolyData(d.getPolyData(), 'measured cop', view=self.view, parent='robot state model').setProperty('Color', colorStatus)
+
+
+                # handles the right and left cop monitors
+                redColorStatus = [1,0,0]
+
+                if self.rightInContact:
+                    d = DebugData()
+                    d.addSphere(measured_cop_right[0:3], radius=0.02)
+                    vis.updatePolyData(d.getPolyData(), 'measured cop right', view=self.view, parent='robot state model').setProperty('Color', redColorStatus)
+                else:
+                    d = DebugData()
+                    vis.updatePolyData(d.getPolyData(), 'measured cop right', view=self.view, parent='robot state model')
+
+                if self.leftInContact:
+                    d = DebugData()
+                    d.addSphere(measured_cop_left[0:3], radius=0.02)
+                    vis.updatePolyData(d.getPolyData(), 'measured cop left', view=self.view, parent='robot state model').setProperty('Color', redColorStatus)
+                else:
+                    d = DebugData()
+                    vis.updatePolyData(d.getPolyData(), 'measured cop left', view=self.view, parent='robot state model')
+
 
         elif self.dialogVisible:
             app.getMainWindow().statusBar().removeWidget(self.warningButton)
