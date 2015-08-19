@@ -57,8 +57,10 @@ class COPMonitor(object):
                 app.getMainWindow().statusBar().insertPermanentWidget(0, self.warningButton)
                 self.dialogVisible = True
 
-            self.leftInContact = self.robotStateJointController.lastRobotStateMessage.force_torque.l_foot_force_z > 500
-            self.rightInContact = self.robotStateJointController.lastRobotStateMessage.force_torque.r_foot_force_z > 500
+            self.leftInContact = self.robotStateJointController.lastRobotStateMessage.force_torque.l_foot_force_z > 200
+            self.rightInContact = self.robotStateJointController.lastRobotStateMessage.force_torque.r_foot_force_z > 200
+
+            
 
             if self.rightInContact or self.leftInContact:
 
