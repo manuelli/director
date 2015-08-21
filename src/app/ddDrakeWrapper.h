@@ -7,6 +7,7 @@
 #include "ddDrakeModel.h"
 #include "ddAppConfigure.h"
 
+class vtkDoubleArray;
 
 class DD_APP_EXPORT ddDrakeWrapper : public QObject
 {
@@ -25,6 +26,8 @@ public:
   double drakeSignedDistanceInsideConvexHull(int num_pts,
                                         const QVector<double>& pts_in, 
                                         const QVector<double> & q_in) const;
+
+  QVector<double> drakeDistanceToEdges(int num_pts, const QVector<double>& pts_in, const QVector<double> &q_in) const;
 
 protected:
 

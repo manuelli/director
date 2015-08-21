@@ -3,6 +3,7 @@
 
 #include <RigidBodyManipulator.h>
 #include <convexHull.h>
+#include <edgeDetector.h>
 #include <ForceTorqueMeasurement.h>
 #include <vector>
 #include <string>
@@ -10,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <math.h>
+#include <vtkDoubleArray.h>
 
 using std::vector;
 
@@ -60,4 +62,31 @@ double ddDrakeWrapper::drakeSignedDistanceInsideConvexHull(int num_pts, const QV
   }
   Vector2d q; q[0] = q_in[0]; q[1] = q_in[1];
   return signedDistanceInsideConvexHull(pts, q);
+}
+
+QVector<double> ddDrakeWrapper::drakeDistanceToEdges(int num_pts, const QVector<double> &pts_in, const QVector<double> &q_in) const {
+
+  // std::cout << "converting matrix from QVector to Eigen::Matrix"<< std::endl;
+
+  Eigen::Matrix<double, 4, 2> pts;
+  for (int i=0; i<num_pts; i++){
+    pts(i,0) = pts_in[i*2];
+    pts(i,1) = pts_in[i*2+1];
+  }
+
+  // std::cout << "points are " << std::endl << pts << std::endl;
+
+
+  Eigen::Vector2d p; p(0) = q_in[0]; p(1) = q_in[1];
+  // std::cout << "finished conversion, calling distanceToEdges" << std::endl;
+
+  Eigen::Vector4d dist = distanceToEdges(pts, p);
+  // std::cout << "exited distanceToEdges function" << std::endl << dist << std::endl;
+  QVector<double> dist_qvector(num_pts);
+
+  for(int i=0; i<num_pts; i++){
+    dist_qvector[i] = dist(i);
+  }
+
+  return dist_qvector;
 }
