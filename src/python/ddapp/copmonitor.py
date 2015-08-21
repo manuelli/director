@@ -123,23 +123,37 @@ class COPMonitor(object):
                 # handles the right and left cop monitors
                 redColorStatus = [1,0,0]
                 greenColorStatus = [0,1,0]
-                edgeDetectionThreshold = 0.03
+                edgeDetectionThreshold = np.array([0.05,0.03,0.1,0.03])
 
                 # print 'left foot points'
                 # print lFootContacts
                 # print type(lFootContacts)
 
-                def computeColorStatus(dist, threshold):
+                def computeColorStatus(edgeDist, threshold):
                     # alpha = min(max(0,dist), threshold)/threshold
                     alpha = 1;
-                    if dist < edgeDetectionThreshold:
+                    if (edgeDist < edgeDetectionThreshold).any():
                         alpha = 0
 
-
                     colorStatus = [(1-alpha), alpha, 0]
+
+                    if self.printDebugData:
+                        print 'distance to front edge'
+                        print edgeDist[0]
+
+                        print 'distance to back edge'
+                        print edgeDist[2]
+
+                        print 'distance to right edge'
+                        print edgeDist[1]
+
+                        print 'distance to left edge'
+                        print edgeDist[3]
+
                     return colorStatus
 
                 worldToRFoot = rFootTransform.GetLinearInverse();
+                worldToLFoot = lFootTransform.GetLinearInverse()
                 numpyFootContacts = np.array(self.LONG_FOOT_CONTACT_POINTS)
                 numpyFootContacts = numpyFootContacts[:,0:2];
                 num_pts = 4
@@ -153,20 +167,13 @@ class COPMonitor(object):
                     # print "measure COP in foot frame is "
                     # print cop_right_foot_frame
 
-                    edgeDist = self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_right_foot_frame[0:2])
+                    edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_right_foot_frame[0:2]))
 
                     if self.printDebugData:
-                        print 'right foot distance to convex hull'
-                        print dist
-
-                        print 'min distance edge left/right'
-                        print min(edgeDist[1], edgeDist[3])
-
-                        print "min edge distance front/back"
-                        print min(edgeDist[0], edgeDist[2])
+                        print 'right foot'
 
 
-                    colorStatus = computeColorStatus(dist, edgeDetectionThreshold)
+                    colorStatus = computeColorStatus(edgeDist, edgeDetectionThreshold)
                     # colorStatus = redColorStatus
 
                     d = DebugData()
@@ -178,15 +185,13 @@ class COPMonitor(object):
 
                 if self.leftInContact:
                     num_pts = 4
-                    contacts = lFootContacts[:, 0:2]
-                    contacts = contacts.reshape(2*num_pts,1)
+                    cop_left_foot_frame = worldToLFoot.TransformPoint(measured_cop_left[0:3])
                     dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, measured_cop_left[0:2])
-
+                    edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_left_foot_frame[0:2]))
                     if self.printDebugData:
-                        print 'left foot distance to foot edge'
-                        print dist
+                        print 'left foot'
 
-                    colorStatus = computeColorStatus(dist, edgeDetectionThreshold)
+                    colorStatus = computeColorStatus(edgeDist, edgeDetectionThreshold)
                     # colorStatus = redColorStatus
 
                     d = DebugData()
