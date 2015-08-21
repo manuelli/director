@@ -35,3 +35,4 @@ ddDrakeWrapper::ddDrakeWrapper();
 ddDrakeWrapper::~ddDrakeWrapper();
 QVector<double> ddDrakeWrapper::resolveCenterOfPressure(const ddDrakeModel&, const QVector<int>&, const QVector<double>&, const QVector<double>&, const QVector<double>&) const;
 double ddDrakeWrapper::drakeSignedDistanceInsideConvexHull(int, const QVector<double>&, const QVector<double>&) const;
+QVector<double> ddDrakeWrapper::drakeDistanceToEdges(int, const QVector<double>& , const QVector<double> &) const;
