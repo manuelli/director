@@ -935,7 +935,7 @@ class JointTeleopPanel(object):
 
         if jointGroups is None:
             # Add only these joint groups:
-            telopJointGroupNames = ['Back', 'Base', 'Left Arm', 'Right Arm', 'Neck']
+            telopJointGroupNames = ['Back', 'Base', 'Left Arm', 'Right Arm', 'Neck', 'Right Leg', 'Left Leg']
             allJointGroups = drcargs.getDirectorConfig()['teleopJointGroups']
             jointGroups = []
             for jointGroup in allJointGroups:
