@@ -68,16 +68,17 @@ QVector<double> ddDrakeWrapper::drakeDistanceToEdges(int num_pts, const QVector<
 
   // std::cout << "converting matrix from QVector to Eigen::Matrix"<< std::endl;
 
-  Eigen::Matrix<double, 4, 2> pts;
+  Eigen::Matrix<double, 3, 4> pts;
   for (int i=0; i<num_pts; i++){
-    pts(i,0) = pts_in[i*2];
-    pts(i,1) = pts_in[i*2+1];
+    pts(0,i) = pts_in[i*3];
+    pts(1,i) = pts_in[i*3+1];
+    pts(2,i) = pts_in[i*3+2];
   }
 
   // std::cout << "points are " << std::endl << pts << std::endl;
 
 
-  Eigen::Vector2d p; p(0) = q_in[0]; p(1) = q_in[1];
+  Eigen::Vector3d p(q_in[0], q_in[1], q_in[2]);
   // std::cout << "finished conversion, calling distanceToEdges" << std::endl;
 
   Eigen::Vector4d dist = distanceToEdges(pts, p);

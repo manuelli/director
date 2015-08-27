@@ -20,7 +20,7 @@ class COPMonitor(object):
                                 [-0.13, -0.0562, 0.0],
                                 [-0.13, 0.0562, 0.0]]
     DESIRED_INTERIOR_DISTANCE = 0.05
-    printDebugData = True
+    printDebugData = False
 
     def __init__(self, robotSystem, view):
 
@@ -81,15 +81,21 @@ class COPMonitor(object):
                 lFootTransform = self.robotStateModel.getLinkFrame( self.robotSystem.ikPlanner.leftFootLink )
                 rFootTransform = self.robotStateModel.getLinkFrame( self.robotSystem.ikPlanner.rightFootLink)
 
-                rFootOrigin = np.array(rFootTransform.TransformPoint([0, 0, -0.07645]))
-                lFootOrigin = np.array(lFootTransform.TransformPoint([0, 0, -0.07645])) # down to sole
+                soleDistance = -0.07645
+                rFootOrigin = np.array(rFootTransform.TransformPoint([0, 0, soleDistance]))
+                lFootOrigin = np.array(lFootTransform.TransformPoint([0, 0, soleDistance])) # down to sole
+
+                rFootNormal = np.array(rFootTransform.TransformVector([0,0,1]))
+                lFootNormal = np.array(lFootTransform.TransformVector([0,0,1]))
+                normal = rFootNormal + lFootNormal
+                normal = 1/np.linalg.norm(normal)*normal
 
                 measured_cop = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.lFootFtFrameId, self.rFootFtFrameId], 
-                                lFootFt + rFootFt, [0., 0., 1.], (self.rightInContact*rFootOrigin+self.leftInContact*lFootOrigin)/(self.leftInContact + self.rightInContact))
+                                lFootFt + rFootFt, normal, (self.rightInContact*rFootOrigin+self.leftInContact*lFootOrigin)/(self.leftInContact + self.rightInContact))
 
-                measured_cop_right = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.rFootFtFrameId], rFootFt, [0.0, 0.0, 1.0], rFootOrigin)
+                measured_cop_right = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.rFootFtFrameId], rFootFt, rFootNormal, rFootOrigin)
 
-                measured_cop_left = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.lFootFtFrameId], lFootFt, [0.0, 0.0, 1.0], lFootOrigin)
+                measured_cop_left = self.ddDrakeWrapper.resolveCenterOfPressure(self.robotStateModel.model, [self.lFootFtFrameId], lFootFt, lFootNormal, lFootOrigin)
 
 
 
@@ -154,24 +160,30 @@ class COPMonitor(object):
 
                 worldToRFoot = rFootTransform.GetLinearInverse();
                 worldToLFoot = lFootTransform.GetLinearInverse()
-                numpyFootContacts = np.array(self.LONG_FOOT_CONTACT_POINTS)
-                numpyFootContacts = numpyFootContacts[:,0:2];
+                numpyFootContacts = np.array(self.LONG_FOOT_CONTACT_POINTS).transpose()
+                numpyFootContacts[2,:] = soleDistance
+
+                self.printDebugData:
+                    print 'foot contacts are'
+                    print numpyFootContacts
+
                 num_pts = 4
-                contacts = numpyFootContacts.reshape(2*num_pts,1)
+                contacts = numpyFootContacts.reshape((3*num_pts,1), order='F')
+                print 'contacts'
+                print contacts
 
                 if self.rightInContact:
-                    num_pts = 4
                     cop_right_foot_frame = worldToRFoot.TransformPoint(measured_cop_right[0:3])
-                    dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, cop_right_foot_frame[0:2])
+                    # dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, cop_right_foot_frame[0:2])
 
                     # print "measure COP in foot frame is "
                     # print cop_right_foot_frame
 
-                    edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_right_foot_frame[0:2]))
+                    edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_right_foot_frame))
 
                     if self.printDebugData:
-                        print 'right foot'
-
+                        print 'right foot cop location'
+                        print cop_right_foot_frame
 
                     colorStatus = computeColorStatus(edgeDist, edgeDetectionThreshold)
                     # colorStatus = redColorStatus
@@ -184,10 +196,9 @@ class COPMonitor(object):
                     vis.updatePolyData(d.getPolyData(), 'measured cop right', view=self.view, parent='robot state model')
 
                 if self.leftInContact:
-                    num_pts = 4
                     cop_left_foot_frame = worldToLFoot.TransformPoint(measured_cop_left[0:3])
-                    dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, measured_cop_left[0:2])
-                    edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_left_foot_frame[0:2]))
+                    # dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, measured_cop_left[0:2])
+                    edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_left_foot_frame))
                     if self.printDebugData:
                         print 'left foot'
 
