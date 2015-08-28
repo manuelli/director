@@ -163,16 +163,20 @@ class COPMonitor(object):
                 numpyFootContacts = np.array(self.LONG_FOOT_CONTACT_POINTS).transpose()
                 numpyFootContacts[2,:] = soleDistance
 
-                self.printDebugData:
+                if self.printDebugData:
                     print 'foot contacts are'
                     print numpyFootContacts
 
                 num_pts = 4
                 contacts = numpyFootContacts.reshape((3*num_pts,1), order='F')
-                print 'contacts'
-                print contacts
+                # print 'contacts'
+                # print contacts
 
                 if self.rightInContact:
+                    print 'right foot cop world frame'
+                    print measured_cop_right[0:3]
+
+
                     cop_right_foot_frame = worldToRFoot.TransformPoint(measured_cop_right[0:3])
                     # dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, cop_right_foot_frame[0:2])
 
@@ -196,6 +200,9 @@ class COPMonitor(object):
                     vis.updatePolyData(d.getPolyData(), 'measured cop right', view=self.view, parent='robot state model')
 
                 if self.leftInContact:
+                    print 'left foot cop world frame'
+                    print measured_cop_left[0:3]
+
                     cop_left_foot_frame = worldToLFoot.TransformPoint(measured_cop_left[0:3])
                     # dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, measured_cop_left[0:2])
                     edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_left_foot_frame))
