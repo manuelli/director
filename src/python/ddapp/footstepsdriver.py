@@ -703,8 +703,12 @@ class FootstepsDriver(object):
 
         self.sendFootstepPlanRequest(request)
 
-    def onStepModified(self, ndx, frameObj):
-        self.lastFootstepPlan.footsteps[ndx+2].pos = transformUtils.positionMessageFromFrame(frameObj.transform)
+    def onStepModified(self, ndx, frameObj, frame=None):
+        if frame is None:
+          self.lastFootstepPlan.footsteps[ndx+2].pos = transformUtils.positionMessageFromFrame(frameObj.transform)
+        else:
+          self.lastFootstepPlan.footsteps[ndx+2].pos = transformUtils.positionMessageFromFrame(frame)
+
         self.lastFootstepPlan.footsteps[ndx+2].fixed_x = True
         self.lastFootstepPlan.footsteps[ndx+2].fixed_y = True
         self.lastFootstepPlan.footsteps[ndx+2].fixed_yaw = True

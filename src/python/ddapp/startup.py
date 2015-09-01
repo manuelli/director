@@ -66,6 +66,7 @@ from ddapp import sensordatarequestpanel
 from ddapp import tasklaunchpanel
 from ddapp import pfgrasp
 from ddapp import pfgrasppanel
+from ddapp import anklepdplanner
 from ddapp.jointpropagator import JointPropagator
 
 from ddapp import coursemodel
@@ -445,6 +446,8 @@ if usePlanning:
     valveTaskPanel = valvedemo.ValveTaskPanel(valveDemo)
 
     drivingPlannerPanel = drivingplanner.DrivingPlannerPanel(robotSystem)
+
+    anklePDPlanner = anklepdplanner.AnklePDPlanner(robotSystem)
 
     walkingDemo = walkingtestdemo.walkingTestDemo(robotStateModel, playbackRobotModel, teleopRobotModel, footstepsDriver, manipPlanner, ikPlanner,
                     lHandDriver, rHandDriver, atlasdriver.driver, perception.multisenseDriver,

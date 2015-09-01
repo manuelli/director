@@ -6,6 +6,7 @@ set(python_files
   ddapp/affordancemanager.py
   ddapp/affordancepanel.py
   ddapp/affordanceurdf.py
+  ddapp/anklepdplanner.py
   ddapp/applogic.py
   ddapp/asynctaskqueue.py
   ddapp/atlasdriver.py
