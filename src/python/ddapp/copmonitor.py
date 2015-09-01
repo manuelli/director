@@ -21,6 +21,7 @@ class COPMonitor(object):
                                 [-0.13, 0.0562, 0.0]]
     DESIRED_INTERIOR_DISTANCE = 0.05
     printDebugData = False
+    printDebugDataEdgeDistance = True
 
     def __init__(self, robotSystem, view):
 
@@ -143,7 +144,9 @@ class COPMonitor(object):
 
                     colorStatus = [(1-alpha), alpha, 0]
 
-                    if self.printDebugData:
+                    if self.printDebugDataEdgeDistance:
+                        print "***********************"
+
                         print 'distance to front edge'
                         print edgeDist[0]
 
@@ -155,6 +158,8 @@ class COPMonitor(object):
 
                         print 'distance to left edge'
                         print edgeDist[3]
+
+                        print "<<<<<<<<<<<<<<<<<<<<<<<<"
 
                     return colorStatus
 
@@ -173,8 +178,12 @@ class COPMonitor(object):
                 # print contacts
 
                 if self.rightInContact:
-                    print 'right foot cop world frame'
-                    print measured_cop_right[0:3]
+                    # if self.printDebugData:
+                    #     print 'right foot cop world frame'
+                    #     print measured_cop_right[0:3]
+
+                    if self.printDebugDataEdgeDistance:
+                        print 'right foot'
 
 
                     cop_right_foot_frame = worldToRFoot.TransformPoint(measured_cop_right[0:3])
@@ -200,13 +209,14 @@ class COPMonitor(object):
                     vis.updatePolyData(d.getPolyData(), 'measured cop right', view=self.view, parent='robot state model')
 
                 if self.leftInContact:
-                    print 'left foot cop world frame'
-                    print measured_cop_left[0:3]
+                    # if self.printDebugData:
+                    #     print 'left foot cop world frame'
+                    #     print measured_cop_left[0:3]
 
                     cop_left_foot_frame = worldToLFoot.TransformPoint(measured_cop_left[0:3])
                     # dist = self.ddDrakeWrapper.drakeSignedDistanceInsideConvexHull(num_pts,contacts, measured_cop_left[0:2])
                     edgeDist = np.array(self.ddDrakeWrapper.drakeDistanceToEdges(num_pts, contacts, cop_left_foot_frame))
-                    if self.printDebugData:
+                    if self.printDebugDataEdgeDistance:
                         print 'left foot'
 
                     colorStatus = computeColorStatus(edgeDist, edgeDetectionThreshold)
