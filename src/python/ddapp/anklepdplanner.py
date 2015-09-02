@@ -89,11 +89,11 @@ class AnklePDPlanner(object):
         if type == "pitch up":
             frame.PreMultiply()
             frame.Translate(0,0,-0.015)
-            frame.RotateY(-20)
+            frame.RotateY(-15)
         if type == "pitch down":
             frame.PreMultiply()
             frame.Translate(0,0,0.015)
-            frame.RotateY(20)
+            frame.RotateY(15)
 
         self.footstepsDriver.onStepModified(ndx,frame, frame=frame)
 
