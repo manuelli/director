@@ -82,10 +82,10 @@ class AnklePDPlanner(object):
 
         if type == 'roll right':
             frame.PreMultiply()
-            frame.RotateX(20)
+            frame.RotateX(10)
         if type == "roll left":
             frame.PreMultiply()
-            frame.RotateX(-20)
+            frame.RotateX(-10)
         if type == "pitch up":
             frame.PreMultiply()
             frame.Translate(0,0,-0.015)
