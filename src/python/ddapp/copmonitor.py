@@ -21,7 +21,7 @@ class COPMonitor(object):
                                 [-0.13, 0.0562, 0.0]]
     DESIRED_INTERIOR_DISTANCE = 0.05
     printDebugData = False
-    printDebugDataEdgeDistance = True
+    printDebugDataEdgeDistance = False
 
     def __init__(self, robotSystem, view):
 
