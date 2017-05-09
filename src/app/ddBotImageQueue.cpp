@@ -446,7 +446,7 @@ void ddBotImageQueue::onImageMessage(const QByteArray& data, const QString& chan
 void ddBotImageQueue::openLCMFile(const QString& filename)
 {
   std::string file = filename.toStdString();
-  assert(pangolin::FileExists(file.c_str()));
+  assert(QFileInfo(filename).exists());
   this->logFile = new lcm::LogFile(file, "r");
 }
 
