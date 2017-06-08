@@ -49,7 +49,7 @@ class ConstraintSet(object):
         self.nominalPoseName = None
         self.positionCosts = []
         # Get joint limits
-        self.jointLimitsLower = np.array([ikPlanner.robotModel.model.getJointLimits(jointName)[0] for jointName in robotstate.getDrakePoseJointNames()])
+        self.jointLimitsLower = np.array(i[rkPlanner.robotModel.model.getJointLimits(jointName)[0] for jointName in robotstate.getDrakePoseJointNames()])
         self.jointLimitsUpper = np.array([ikPlanner.robotModel.model.getJointLimits(jointName)[1] for jointName in robotstate.getDrakePoseJointNames()])
 
     def runIk(self):

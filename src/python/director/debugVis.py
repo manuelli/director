@@ -131,6 +131,14 @@ class DebugData(object):
         cube.Update()
         self.addPolyData(cube.GetOutput(), color)
 
+    def addCubeFromBounds(self, bmin, bmax, color=[1,1,1], subdivisions=0):
+        cube = vtk.vtkTessellatedBoxSource()
+        cube.SetBounds(bmin[0], bmax[0], bmin[1], bmax[1], bmin[2], bmax[2])
+        cube.SetLevel(subdivisions)
+        cube.QuadsOn()
+        cube.Update()
+        self.addPolyData(cube.GetOutput(), color)
+
     def addCylinder(self, center, axis, length, radius, color=[1,1,1]):
         axis = np.asarray(axis) / np.linalg.norm(axis)
         center = np.array(center)
