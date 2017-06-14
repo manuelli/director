@@ -35,6 +35,12 @@ class PyDrakePlannerPublisher(plannerPublisher.PlannerPublisher):
         self.counter = FPSCounter()
         self.counter.printToConsole = True
         self.ikServer = None
+        self.options = self.makeDefaultOptions()
+
+    def makeDefaultOptions():
+        options = dict()
+        options['encodeVelocityInPlanMsg'] = True
+        return options
 
     def _setupLocalServer(self):
 
@@ -82,8 +88,22 @@ class PyDrakePlannerPublisher(plannerPublisher.PlannerPublisher):
         from director import robotstate
 
         states = [robotstate.drakePoseToRobotState(pose) for pose in poses]
+        jointPositionList = [None]*len(states)
+
         for i, state in enumerate(states):
             state.utime = poseTimes[i]*1e6
+            jointPositionList[i] = state.joint_position
+
+        if self.options['encodeVelocityInPlanMsg']:
+            assert self.ikServer.trajInterpolationMode in ('cubic', 'pchip'), "to encode velocity in plan we must have trajInterpolationMode in ('cubic', 'pchip')"
+
+            positionTrajectory = self.ikServer.getInterpolationFunction(poseTimes, jointPositionList, self.ikServer.trajInterpolationMode)
+
+            for idx, poseTime in enumerate(poseTimes):
+                state = states[i]
+                jointVelocity = positionTrajectory(poseTime, nu=1)
+                state.joint_velocity = jointVelocity
+        
 
         msg = robot_plan_t()
         msg.utime = fields.utime
@@ -502,6 +522,8 @@ class PyDrakeIkServer(object):
 
         if kind == 'pchip':
             return scipy.interpolate.PchipInterpolator(x, y, axis=0)
+        elif kind == 'cubic':
+            return scipy.interpolate.CubicSpline(x, y, axis=0)
         else:
             return scipy.interpolate.interp1d(x, y, axis=0, kind=kind)
 
