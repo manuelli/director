@@ -37,7 +37,7 @@ class PyDrakePlannerPublisher(plannerPublisher.PlannerPublisher):
         self.ikServer = None
         self.options = self.makeDefaultOptions()
 
-    def makeDefaultOptions():
+    def makeDefaultOptions(self):
         options = dict()
         options['encodeVelocityInPlanMsg'] = True
         return options
@@ -100,7 +100,7 @@ class PyDrakePlannerPublisher(plannerPublisher.PlannerPublisher):
             positionTrajectory = self.ikServer.getInterpolationFunction(poseTimes, jointPositionList, self.ikServer.trajInterpolationMode)
 
             for idx, poseTime in enumerate(poseTimes):
-                state = states[i]
+                state = states[idx]
                 jointVelocity = positionTrajectory(poseTime, nu=1)
                 state.joint_velocity = jointVelocity
         
