@@ -63,6 +63,15 @@ void ddPointCloudLCM::init(ddLCMThread* lcmThread, const QString& botConfigFile)
           SLOT(onPointCloud2Frame(const QByteArray&, const QString&)), Qt::DirectConnection);
   mLCM->addSubscriber(subscriber2);
 
+  // add ROS subscribers
+  // empty command line options
+  int argc = 0;
+  char **argv;
+  std::cout << "setting up ROS subscribers " << std::endl;
+  ros::init(argc, argv, "director_listener");
+  ros::NodeHandle nodeHandle;
+  ros::Subscriber sub = nodeHandle.subscribe("/director_test", 1, &ddPointCloudLCM::onRosMessage, this);
+
 }
 
 
@@ -209,6 +218,9 @@ vtkSmartPointer<vtkPolyData> PolyDataFromPointCloudMessage(bot_core::pointcloud_
 
 };
 
+void ddPointCloudLCM::onRosMessage(const std_msgs::String::ConstPtr& msg){
+  std::cout << "got a ROS message in director " << std::endl;
+}
 
 
 //-----------------------------------------------------------------------------

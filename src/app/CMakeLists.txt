@@ -12,6 +12,16 @@ find_package(OpenGL REQUIRED)
 find_package(VTK REQUIRED)
 find_package(QtPropertyBrowser REQUIRED)
 
+# ROS includes
+find_package(roscpp)
+find_package(std_msgs)
+find_package(sensor_msgs)
+
+include_directories(${roscpp_INCLUDE_DIRS})
+include_directories(${std_msgs_INCLUDE_DIRS})
+include_directories(${sensor_msgs_INCLUDE_DIRS})
+
+
 include(${VTK_USE_FILE})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -102,6 +112,12 @@ set(deps
 
 set(pkg_deps)
 
+# add ROS dependencies
+list(APPEND deps
+        ${roscpp_LIBRARIES}
+        ${std_msgs_LIBRARIES}
+        ${sensor_msgs_LIBRARIES}
+        )
 
 
 

@@ -23,6 +23,12 @@
 #include <bot_param/param_client.h>
 #include <bot_param/param_util.h>
 
+// ros includes
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include "std_msgs/String.h"
+
+
 class DD_APP_EXPORT ddPointCloudLCM : public QObject
 {
   Q_OBJECT
@@ -41,6 +47,7 @@ public:
   QList<int> getLidarIntensity(const QString& lidarName);
   QString getLidarChannelName(const QString& lidarName);
   QString getLidarCoordinateFrame(const QString& lidarName);
+  void onRosMessage(const std_msgs::String::ConstPtr& msg);
 
 protected slots:
 
@@ -57,7 +64,6 @@ protected:
   vtkSmartPointer<vtkPolyData> mPolyData;
   int64_t mUtime;
   QMutex mPolyDataMutex;
-
 };
 
 #endif
