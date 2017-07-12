@@ -71,7 +71,9 @@ void ddPointCloudLCM::init(ddLCMThread* lcmThread, const QString& botConfigFile)
   ros::init(argc, argv, "director_listener");
   ros::NodeHandle nodeHandle;
   ros::Subscriber sub = nodeHandle.subscribe("/director_test", 1, &ddPointCloudLCM::onRosMessage, this);
-
+  ros::AsyncSpinner spinner(2); // Use 4 threads
+  spinner.start();
+  ros::waitForShutdown();
 }
 
 
@@ -219,7 +221,7 @@ vtkSmartPointer<vtkPolyData> PolyDataFromPointCloudMessage(bot_core::pointcloud_
 };
 
 void ddPointCloudLCM::onRosMessage(const std_msgs::String::ConstPtr& msg){
-  std::cout << "got a ROS message in director " << std::endl;
+  std::cout << "got a ROS message in director cpp" << std::endl;
 }
 
 
