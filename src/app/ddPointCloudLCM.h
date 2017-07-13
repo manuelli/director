@@ -64,6 +64,10 @@ protected:
   vtkSmartPointer<vtkPolyData> mPolyData;
   int64_t mUtime;
   QMutex mPolyDataMutex;
+
+  std::shared_ptr<ros::NodeHandle> nodeHandle;
+  ros::Subscriber rosSubscriber;
+  std::shared_ptr<ros::AsyncSpinner> asyncSpinner;
 };
 
 #endif

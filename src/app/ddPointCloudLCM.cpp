@@ -69,11 +69,11 @@ void ddPointCloudLCM::init(ddLCMThread* lcmThread, const QString& botConfigFile)
   char **argv;
   std::cout << "setting up ROS subscribers " << std::endl;
   ros::init(argc, argv, "director_listener");
-  ros::NodeHandle nodeHandle;
-  ros::Subscriber sub = nodeHandle.subscribe("/director_test", 1, &ddPointCloudLCM::onRosMessage, this);
-  ros::AsyncSpinner spinner(2); // Use 4 threads
-  spinner.start();
-  ros::waitForShutdown();
+  nodeHandle = std::make_shared<ros::NodeHandle>();
+  rosSubscriber = nodeHandle->subscribe("/director_test", 1, &ddPointCloudLCM::onRosMessage, this);
+  asyncSpinner = std::make_shared<ros::AsyncSpinner>(2);
+  asyncSpinner->start();
+//  ros::waitForShutdown();
 }
 
 
