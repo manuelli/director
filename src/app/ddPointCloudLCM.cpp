@@ -1,10 +1,12 @@
 #include "ddPointCloudLCM.h"
+#include <boost/bind.hpp>
 
 #include <vtkIdTypeArray.h>
 #include <vtkCellArray.h>
 #include <vtkNew.h>
 
 #include <multisense_utils/conversions_lcm.hpp>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace pcl
 {
@@ -20,11 +22,20 @@ namespace pcl
 };
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(pcl::PointXYZIR,
-                                  (float, x, x)
-                                  (float, y, y)
-                                  (float, z, z)
-                                  (float, intensity, intensity)
-                                  (uint16_t, ring, ring))
+(float, x, x)
+(float, y, y)
+(float, z, z)
+(float, intensity, intensity)
+(uint16_t, ring, ring))
+
+//RosPointcloudCallback::RosPointcloudCallback(std::shared_ptr<ddPointCloudLCM> ptr, int idx) {
+//  this->idx_ = idx;
+//  this->ptr = ptr;
+//}
+//
+//void RosPointcloudCallback::callback(const sensor_msgs::PointCloud2 &msg) {
+//  std::cout << "got message on channel " << this->idx_ << std::endl;
+//}
 
 
 //-----------------------------------------------------------------------------
@@ -48,31 +59,34 @@ void ddPointCloudLCM::init(ddLCMThread* lcmThread, const QString& botConfigFile)
           lcmThread->lcmHandle()->getUnderlyingLCM(), 0);
     }
   }
-  
+
   mLCM = lcmThread;
 
   QString channelName = "POINTCLOUD";
   ddLCMSubscriber* subscriber = new ddLCMSubscriber(channelName, this);
   this->connect(subscriber, SIGNAL(messageReceived(const QByteArray&, const QString&)),
-          SLOT(onPointCloudFrame(const QByteArray&, const QString&)), Qt::DirectConnection);
+  SLOT(onPointCloudFrame(const QByteArray&, const QString&)), Qt::DirectConnection);
   mLCM->addSubscriber(subscriber);
 
   QString channelName2 = "VELODYNE";
   ddLCMSubscriber* subscriber2 = new ddLCMSubscriber(channelName2, this);
   this->connect(subscriber2, SIGNAL(messageReceived(const QByteArray&, const QString&)),
-          SLOT(onPointCloud2Frame(const QByteArray&, const QString&)), Qt::DirectConnection);
+  SLOT(onPointCloud2Frame(const QByteArray&, const QString&)), Qt::DirectConnection);
   mLCM->addSubscriber(subscriber2);
 
-  // add ROS subscribers
-  // empty command line options
-  int argc = 0;
-  char **argv;
-  std::cout << "setting up ROS subscribers " << std::endl;
-  ros::init(argc, argv, "director_listener");
-  nodeHandle = std::make_shared<ros::NodeHandle>();
-  rosSubscriber = nodeHandle->subscribe("/director_test", 1, &ddPointCloudLCM::onRosMessage, this);
-  asyncSpinner = std::make_shared<ros::AsyncSpinner>(2);
-  asyncSpinner->start();
+//  // add ROS subscribers
+//  // empty command line options
+//  int argc = 0;
+//  char **argv;
+//  std::cout << "setting up ROS subscribers " << std::endl;
+
+  this->setupRosSubscribers();
+//  ros::init(argc, argv, "director_listener");
+//  nodeHandle = std::make_shared<ros::NodeHandle>();
+//  rosSubscriber = nodeHandle->subscribe("/director_test", 1, &ddPointCloudLCM::onRosMessage, this);
+//  rosSubscriber = nodeHandle->subscribe("/cloud_pcd", 1, &ddPointCloudLCM::onPointCloud2RosMessage, this);
+//  asyncSpinner = std::make_shared<ros::AsyncSpinner>(2);
+//  asyncSpinner->start();
 //  ros::waitForShutdown();
 }
 
@@ -83,152 +97,272 @@ namespace {
 
 
 //----------------------------------------------------------------------------
-vtkSmartPointer<vtkCellArray> NewVertexCells(vtkIdType numberOfVerts)
-{
-  vtkNew<vtkIdTypeArray> cells;
-  cells->SetNumberOfValues(numberOfVerts*2);
-  vtkIdType* ids = cells->GetPointer(0);
-  for (vtkIdType i = 0; i < numberOfVerts; ++i)
+  vtkSmartPointer<vtkCellArray> NewVertexCells(vtkIdType numberOfVerts)
+  {
+    vtkNew<vtkIdTypeArray> cells;
+    cells->SetNumberOfValues(numberOfVerts*2);
+    vtkIdType* ids = cells->GetPointer(0);
+    for (vtkIdType i = 0; i < numberOfVerts; ++i)
     {
-    ids[i*2] = 1;
-    ids[i*2+1] = i;
+      ids[i*2] = 1;
+      ids[i*2+1] = i;
     }
 
-  vtkSmartPointer<vtkCellArray> cellArray = vtkSmartPointer<vtkCellArray>::New();
-  cellArray->SetCells(numberOfVerts, cells.GetPointer());
-  return cellArray;
-}
-
-
-
-//----------------------------------------------------------------------------
-vtkSmartPointer<vtkPolyData> PolyDataFromPointCloud2Message(pcl::PointCloud<pcl::PointXYZIR>::ConstPtr cloud)
-{
-  vtkIdType nr_points = cloud->points.size();
-
-  vtkNew<vtkPoints> points;
-  points->SetDataTypeToFloat();
-  points->SetNumberOfPoints(nr_points);
-
-  vtkNew<vtkFloatArray> intensityArray;
-  intensityArray->SetName("intensity");
-  intensityArray->SetNumberOfComponents(1);
-  intensityArray->SetNumberOfValues(nr_points);
-
-  vtkNew<vtkUnsignedIntArray> ringArray;
-  ringArray->SetName("ring");
-  ringArray->SetNumberOfComponents(1);
-  ringArray->SetNumberOfValues(nr_points);
-
-  vtkIdType j = 0;    
-  for (vtkIdType i = 0; i < nr_points; ++i)
-  {
-    // Check if the point is invalid
-    if (!pcl_isfinite (cloud->points[i].x) ||
-        !pcl_isfinite (cloud->points[i].y) ||
-        !pcl_isfinite (cloud->points[i].z))
-      continue;
-
-    float point[3] = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
-    points->SetPoint(j, point);
-
-    float intensity = cloud->points[i].intensity;
-    intensityArray->SetValue(j,intensity);
-
-    uint16_t ring = cloud->points[i].ring;
-    ringArray->SetValue(j,ring);
-
-    j++;
+    vtkSmartPointer<vtkCellArray> cellArray = vtkSmartPointer<vtkCellArray>::New();
+    cellArray->SetCells(numberOfVerts, cells.GetPointer());
+    return cellArray;
   }
-  nr_points = j;
-  points->SetNumberOfPoints(nr_points);
 
-  vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
-  polyData->SetPoints(points.GetPointer());
-  polyData->GetPointData()->AddArray(intensityArray.GetPointer());
-  polyData->GetPointData()->AddArray(ringArray.GetPointer());
-  polyData->SetVerts(NewVertexCells(nr_points));
-  return polyData;
-}
+
+
+//----------------------------------------------------------------------------
+  vtkSmartPointer<vtkPolyData> PolyDataFromPointCloud2Message(pcl::PointCloud<pcl::PointXYZIR>::ConstPtr cloud)
+  {
+    vtkIdType nr_points = cloud->points.size();
+
+    vtkNew<vtkPoints> points;
+    points->SetDataTypeToFloat();
+    points->SetNumberOfPoints(nr_points);
+
+    vtkNew<vtkFloatArray> intensityArray;
+    intensityArray->SetName("intensity");
+    intensityArray->SetNumberOfComponents(1);
+    intensityArray->SetNumberOfValues(nr_points);
+
+    vtkNew<vtkUnsignedIntArray> ringArray;
+    ringArray->SetName("ring");
+    ringArray->SetNumberOfComponents(1);
+    ringArray->SetNumberOfValues(nr_points);
+
+    vtkIdType j = 0;
+    for (vtkIdType i = 0; i < nr_points; ++i)
+    {
+      // Check if the point is invalid
+      if (!pcl_isfinite (cloud->points[i].x) ||
+          !pcl_isfinite (cloud->points[i].y) ||
+          !pcl_isfinite (cloud->points[i].z))
+        continue;
+
+      float point[3] = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
+      points->SetPoint(j, point);
+
+      float intensity = cloud->points[i].intensity;
+      intensityArray->SetValue(j,intensity);
+
+      uint16_t ring = cloud->points[i].ring;
+      ringArray->SetValue(j,ring);
+
+      j++;
+    }
+    nr_points = j;
+    points->SetNumberOfPoints(nr_points);
+
+    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->SetPoints(points.GetPointer());
+    polyData->GetPointData()->AddArray(intensityArray.GetPointer());
+    polyData->GetPointData()->AddArray(ringArray.GetPointer());
+    polyData->SetVerts(NewVertexCells(nr_points));
+    return polyData;
+  }
+  vtkSmartPointer<vtkPolyData> PolyDataFromPointCloud2Message(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud)
+  {
+    vtkIdType nr_points = cloud->points.size();
+
+    vtkNew<vtkPoints> points;
+    points->SetDataTypeToFloat();
+    points->SetNumberOfPoints(nr_points);
+
+//    vtkNew<vtkFloatArray> intensityArray;
+//    intensityArray->SetName("intensity");
+//    intensityArray->SetNumberOfComponents(1);
+//    intensityArray->SetNumberOfValues(nr_points);
+//
+//    vtkNew<vtkUnsignedIntArray> ringArray;
+//    ringArray->SetName("ring");
+//    ringArray->SetNumberOfComponents(1);
+//    ringArray->SetNumberOfValues(nr_points);
+
+    vtkIdType j = 0;
+    for (vtkIdType i = 0; i < nr_points; ++i)
+    {
+      // Check if the point is invalid
+      if (!pcl_isfinite (cloud->points[i].x) ||
+          !pcl_isfinite (cloud->points[i].y) ||
+          !pcl_isfinite (cloud->points[i].z))
+        continue;
+
+      float point[3] = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
+      points->SetPoint(j, point);
+
+//      float intensity = cloud->points[i].intensity;
+//      intensityArray->SetValue(j,intensity);
+//
+//      uint16_t ring = cloud->points[i].ring;
+//      ringArray->SetValue(j,ring);
+
+      j++;
+    }
+    nr_points = j;
+    points->SetNumberOfPoints(nr_points);
+
+    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->SetPoints(points.GetPointer());
+//    polyData->GetPointData()->AddArray(intensityArray.GetPointer());
+//    polyData->GetPointData()->AddArray(ringArray.GetPointer());
+    polyData->SetVerts(NewVertexCells(nr_points));
+    return polyData;
+  }
 
 
 //----------------------------------------------------------------------------
 
-void unpackColor(float f, unsigned char color[]) {
+  void unpackColor(float f, unsigned char color[]) {
     color[2] = floor(f / 256.0 / 256.0);
     color[1] = floor((f - color[2] * 256.0 * 256.0) / 256.0);
     color[0] = floor(f - color[2] * 256.0 * 256.0 - color[1] * 256.0);
-}
-
-
-vtkSmartPointer<vtkPolyData> PolyDataFromPointCloudMessage(bot_core::pointcloud_t msg)
-{
-
-  // Copy over XYZ data
-  vtkIdType nr_points = msg.points.size();
-  vtkNew<vtkPoints> points;
-  points->SetDataTypeToFloat();
-  points->SetNumberOfPoints(nr_points);
-  for (vtkIdType i = 0; i < nr_points; ++i)
-  {
-    float point[3] = {msg.points[i][0], msg.points[i][1], msg.points[i][2]};
-    points->SetPoint(i, point);
-  }
-  vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
-  polyData->SetPoints(points.GetPointer());
-
-  // Per channel attributes
-  for (size_t j=0; j<msg.channel_names.size(); j++)
-  {
-    if (msg.channel_names[j] == "rgb_colors" )
-    {
-       vtkNew<vtkUnsignedCharArray> rgbArray;
-       rgbArray->SetName("rgb_colors");
-       rgbArray->SetNumberOfComponents(3);
-       rgbArray->SetNumberOfTuples(nr_points);
-
-       for (vtkIdType i = 0; i < nr_points; ++i)
-       {
-         unsigned char color[3];
-         unpackColor(msg.channels[j][i], color);
-         rgbArray->SetTupleValue(i, color);
-       }
-       rgbArray->SetNumberOfTuples(nr_points);
-       polyData->GetPointData()->AddArray(rgbArray.GetPointer());
-
-    }
-    else
-    {
-
-      vtkNew<vtkFloatArray> floatArray;
-      floatArray->SetName(msg.channel_names[j].c_str() );
-      floatArray->SetNumberOfComponents(1);
-      floatArray->SetNumberOfValues(nr_points);
-      for (vtkIdType i = 0; i < nr_points; ++i)
-        floatArray->SetValue(j, (float) msg.channels[j][i] );
-
-      polyData->GetPointData()->AddArray(floatArray.GetPointer());
-    }
   }
 
-  polyData->SetVerts(NewVertexCells(nr_points));
-  return polyData;
-}
 
+  vtkSmartPointer<vtkPolyData> PolyDataFromPointCloudMessage(bot_core::pointcloud_t msg)
+  {
 
+    // Copy over XYZ data
+    vtkIdType nr_points = msg.points.size();
+    vtkNew<vtkPoints> points;
+    points->SetDataTypeToFloat();
+    points->SetNumberOfPoints(nr_points);
+    for (vtkIdType i = 0; i < nr_points; ++i)
+    {
+      float point[3] = {msg.points[i][0], msg.points[i][1], msg.points[i][2]};
+      points->SetPoint(i, point);
+    }
+    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->SetPoints(points.GetPointer());
 
+    // Per channel attributes
+    for (size_t j=0; j<msg.channel_names.size(); j++)
+    {
+      if (msg.channel_names[j] == "rgb_colors" )
+      {
+        vtkNew<vtkUnsignedCharArray> rgbArray;
+        rgbArray->SetName("rgb_colors");
+        rgbArray->SetNumberOfComponents(3);
+        rgbArray->SetNumberOfTuples(nr_points);
 
+        for (vtkIdType i = 0; i < nr_points; ++i)
+        {
+          unsigned char color[3];
+          unpackColor(msg.channels[j][i], color);
+          rgbArray->SetTupleValue(i, color);
+        }
+        rgbArray->SetNumberOfTuples(nr_points);
+        polyData->GetPointData()->AddArray(rgbArray.GetPointer());
+
+      }
+      else
+      {
+
+        vtkNew<vtkFloatArray> floatArray;
+        floatArray->SetName(msg.channel_names[j].c_str() );
+        floatArray->SetNumberOfComponents(1);
+        floatArray->SetNumberOfValues(nr_points);
+        for (vtkIdType i = 0; i < nr_points; ++i)
+          floatArray->SetValue(j, (float) msg.channels[j][i] );
+
+        polyData->GetPointData()->AddArray(floatArray.GetPointer());
+      }
+    }
+
+    polyData->SetVerts(NewVertexCells(nr_points));
+    return polyData;
+  }
 };
+
+void ddPointCloudLCM::setupRosSubscribers(){
+  // add ROS subscribers
+  // empty command line options
+  int argc = 0;
+  char **argv;
+  std::cout << "setting up ROS subscribers " << std::endl;
+  ros::init(argc, argv, "director_cpp");
+  nodeHandle = std::make_shared<ros::NodeHandle>();
+  int numSensors = 4;
+  rosSubscribers.clear();
+  std::string topicName;
+
+  // very hacky but works for now
+  topicName = "/sensor_3d/sensor_ensenso_tote_unpack_1/point_cloud";
+  rosSubscribers.push_back(nodeHandle->subscribe(topicName, 1, &ddPointCloudLCM::onPointCloud2RosMessage1, this));
+
+  topicName = "/sensor_3d/sensor_ensenso_tote_unpack_2/point_cloud";
+  rosSubscribers.push_back(nodeHandle->subscribe(topicName, 1, &ddPointCloudLCM::onPointCloud2RosMessage2, this));
+
+  topicName = "/sensor_3d/sensor_ensenso_tote_unpack_3/point_cloud";
+  rosSubscribers.push_back(nodeHandle->subscribe(topicName, 1, &ddPointCloudLCM::onPointCloud2RosMessage3, this));
+
+  topicName = "/sensor_3d/sensor_ensenso_tote_unpack_4/point_cloud";
+  rosSubscribers.push_back(nodeHandle->subscribe(topicName, 1, &ddPointCloudLCM::onPointCloud2RosMessage4, this));
+
+//  boost::shared_ptr<ddPointCloudLCM> var = boost::make_shared<ddPointCloudLCM>(this);
+//  rosSubscriber = nodeHandle->subscribe("/director_test_2", 1, &ddPointCloudLCM::onRosMessage,this);
+
+
+//  rosSubscriber = nodeHandle->subscribe("/director_test_2", 1, boost::bind(&ddPointCloudLCM::onRosMessage), this);
+  rosSubscriber = nodeHandle->subscribe("/cloud_pcd", 1, &ddPointCloudLCM::onPointCloud2RosMessageTest, this);
+  asyncSpinner = std::make_shared<ros::AsyncSpinner>(2);
+  asyncSpinner->start();
+}
 
 void ddPointCloudLCM::onRosMessage(const std_msgs::String::ConstPtr& msg){
   std::cout << "got a ROS message in director cpp" << std::endl;
+}
+
+void ddPointCloudLCM::onRosMessage2(const std_msgs::String::ConstPtr& msg, int idx){
+  std::cout << "got a ROS message in director cpp" << std::endl;
+}
+
+void ddPointCloudLCM::onPointCloud2RosMessage1(const sensor_msgs::PointCloud2 &msg) {
+  std::cout << "got pointcloud message" << std::endl;
+  this->onPointCloud2RosMessage(msg, 1);
+}
+
+void ddPointCloudLCM::onPointCloud2RosMessage2(const sensor_msgs::PointCloud2 &msg) {
+  this->onPointCloud2RosMessage(msg, 2);
+}
+
+void ddPointCloudLCM::onPointCloud2RosMessage3(const sensor_msgs::PointCloud2 &msg) {
+  this->onPointCloud2RosMessage(msg, 3);
+}
+
+void ddPointCloudLCM::onPointCloud2RosMessage4(const sensor_msgs::PointCloud2 &msg) {
+  this->onPointCloud2RosMessage(msg, 4);
+}
+
+void ddPointCloudLCM::onPointCloud2RosMessage(const sensor_msgs::PointCloud2& msg, int cameraNumber){
+  std::cout << "got a PointCloud2 ROS message in director cpp for camera " << cameraNumber << std::endl;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>() );
+  pcl::fromROSMsg(msg, *cloud);
+  vtkSmartPointer<vtkPolyData> polyData = PolyDataFromPointCloud2Message(cloud);
+  QMutexLocker locker(&this->mPolyDataMutex);
+  this->rosPolyDataMap[cameraNumber] = polyData;
+  std::cout << "decoded PointCloud2Message " << std::endl;
+}
+
+void ddPointCloudLCM::onPointCloud2RosMessageTest(const sensor_msgs::PointCloud2& msg){
+  std::cout << "got a PointCloud2 ROS message in director cpp for camera (TEST)" << std::endl;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>() );
+  pcl::fromROSMsg(msg, *cloud);
+  vtkSmartPointer<vtkPolyData> polyData = PolyDataFromPointCloud2Message(cloud);
+  QMutexLocker locker(&this->mPolyDataMutex);
+  this->rosPolyData = polyData;
+  std::cout << "decoded PointCloud2Message " << std::endl;
 }
 
 
 //-----------------------------------------------------------------------------
 void ddPointCloudLCM::onPointCloud2Frame(const QByteArray& data, const QString& channel)
 {
-  
+
   bot_core::pointcloud2_t message;
   message.decode(data.data(), 0, data.size());
 
@@ -246,7 +380,7 @@ void ddPointCloudLCM::onPointCloud2Frame(const QByteArray& data, const QString& 
 //-----------------------------------------------------------------------------
 void ddPointCloudLCM::onPointCloudFrame(const QByteArray& data, const QString& channel)
 {
-  
+
   bot_core::pointcloud_t message;
   message.decode(data.data(), 0, data.size());
 
@@ -264,6 +398,18 @@ qint64 ddPointCloudLCM::getPointCloudFromPointCloud(vtkPolyData* polyDataRender)
   QMutexLocker locker(&this->mPolyDataMutex);
   polyDataRender->ShallowCopy(this->mPolyData);
   return this->mUtime;
+}
+
+void ddPointCloudLCM::getRosPointCloud(vtkPolyData* polyDataRender)
+{
+  QMutexLocker locker(&this->mPolyDataMutex);
+  polyDataRender->ShallowCopy(this->rosPolyData);
+}
+
+void ddPointCloudLCM::getRosPointCloud(vtkPolyData* polyDataRender, int cameraNumber)
+{
+  QMutexLocker locker(&this->mPolyDataMutex);
+  polyDataRender->ShallowCopy(this->rosPolyDataMap[cameraNumber]);
 }
 
 //-----------------------------------------------------------------------------

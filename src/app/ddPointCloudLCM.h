@@ -28,6 +28,15 @@
 #include <sensor_msgs/PointCloud2.h>
 #include "std_msgs/String.h"
 
+//class RosPointcloudCallback{
+//public:
+//  RosPointcloudCallback(std::shared_ptr<ddPointCloudLCM> ptr, int idx);
+//  void callback(const sensor_msgs::PointCloud2& msg);
+//
+//  int idx_;
+//  std::shared_ptr<ddPointCloudLCM> ptr;
+//};
+
 
 class DD_APP_EXPORT ddPointCloudLCM : public QObject
 {
@@ -39,6 +48,8 @@ public:
   
   void init(ddLCMThread* lcmThread, const QString& botConfigFile);
   qint64 getPointCloudFromPointCloud(vtkPolyData* polyDataRender);
+  void getRosPointCloud(vtkPolyData* polyDataRender);
+  void getRosPointCloud(vtkPolyData* polyDataRender, int cameraNumber);
 
   QStringList getLidarNames() const;
   QString getLidarFriendlyName(const QString& lidarName);
@@ -48,6 +59,15 @@ public:
   QString getLidarChannelName(const QString& lidarName);
   QString getLidarCoordinateFrame(const QString& lidarName);
   void onRosMessage(const std_msgs::String::ConstPtr& msg);
+  void onRosMessage2(const std_msgs::String::ConstPtr& msg, int idx);
+  void onPointCloud2RosMessage(const sensor_msgs::PointCloud2& msg, int cameraNumber);
+  void onPointCloud2RosMessage1(const sensor_msgs::PointCloud2& msg);
+  void onPointCloud2RosMessage2(const sensor_msgs::PointCloud2& msg);
+  void onPointCloud2RosMessage3(const sensor_msgs::PointCloud2& msg);
+  void onPointCloud2RosMessage4(const sensor_msgs::PointCloud2& msg);
+  void onPointCloud2RosMessageTest(const sensor_msgs::PointCloud2& msg);
+
+  void setupRosSubscribers();
 
 protected slots:
 
@@ -62,12 +82,18 @@ protected:
   ddLCMThread* mLCM;
 
   vtkSmartPointer<vtkPolyData> mPolyData;
+  vtkSmartPointer<vtkPolyData> rosPolyData;
+  std::map<int, vtkSmartPointer<vtkPolyData>> rosPolyDataMap;
   int64_t mUtime;
   QMutex mPolyDataMutex;
 
   std::shared_ptr<ros::NodeHandle> nodeHandle;
+  std::vector<ros::Subscriber> rosSubscribers;
   ros::Subscriber rosSubscriber;
   std::shared_ptr<ros::AsyncSpinner> asyncSpinner;
+//  std::vector<std::shared_ptr<RosPointcloudCallback>> callbackObjects;
 };
+
+
 
 #endif

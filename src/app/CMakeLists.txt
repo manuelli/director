@@ -16,10 +16,13 @@ find_package(QtPropertyBrowser REQUIRED)
 find_package(roscpp)
 find_package(std_msgs)
 find_package(sensor_msgs)
+find_package(pcl_conversions)
 
 include_directories(${roscpp_INCLUDE_DIRS})
 include_directories(${std_msgs_INCLUDE_DIRS})
 include_directories(${sensor_msgs_INCLUDE_DIRS})
+include_directories(${pcl_conversions_INCLUDE_DIRS})
+
 
 
 include(${VTK_USE_FILE})
@@ -117,6 +120,7 @@ list(APPEND deps
         ${roscpp_LIBRARIES}
         ${std_msgs_LIBRARIES}
         ${sensor_msgs_LIBRARIES}
+        ${pcl_conversions_LIBRARIES}
         )
 
 

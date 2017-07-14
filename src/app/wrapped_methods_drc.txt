@@ -28,6 +28,8 @@ bool ddBotImageQueue::readNextImagesMessage();
 ddPointCloudLCM::ddPointCloudLCM(QObject*);
 void ddPointCloudLCM::init(ddLCMThread*, const QString&);
 qint64 ddPointCloudLCM::getPointCloudFromPointCloud(vtkPolyData*);
+void ddPointCloudLCM::getRosPointCloud(vtkPolyData*);
+void ddPointCloudLCM::getRosPointCloud(vtkPolyData*, int);
 QStringList ddPointCloudLCM::getLidarNames() const;
 QString ddPointCloudLCM::getLidarFriendlyName(const QString&);
 QString ddPointCloudLCM::getLidarChannelName(const QString&);
