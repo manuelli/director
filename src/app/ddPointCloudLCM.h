@@ -23,10 +23,16 @@
 #include <bot_param/param_client.h>
 #include <bot_param/param_util.h>
 
+
+// need to be wrapped in Q_MOC_RUN due to parsing error in qt4
+#ifndef Q_MOC_RUN
+
 // ros includes
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include "std_msgs/String.h"
+
+#endif
 
 //class RosPointcloudCallback{
 //public:

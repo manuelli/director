@@ -1,12 +1,14 @@
 #include "ddPointCloudLCM.h"
-#include <boost/bind.hpp>
 
 #include <vtkIdTypeArray.h>
 #include <vtkCellArray.h>
 #include <vtkNew.h>
 
 #include <multisense_utils/conversions_lcm.hpp>
+
+#ifndef Q_MOC_RUN
 #include <pcl_conversions/pcl_conversions.h>
+#endif
 
 namespace pcl
 {
