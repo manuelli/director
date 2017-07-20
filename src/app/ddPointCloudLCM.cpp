@@ -1,5 +1,8 @@
 #include "ddPointCloudLCM.h"
 
+#include <chrono>
+#include <thread>
+
 #include <vtkIdTypeArray.h>
 #include <vtkCellArray.h>
 #include <vtkNew.h>
@@ -340,13 +343,19 @@ void ddPointCloudLCM::onPointCloud2RosMessage4(const sensor_msgs::PointCloud2 &m
   this->onPointCloud2RosMessage(msg, 4);
 }
 
+
 void ddPointCloudLCM::onPointCloud2RosMessage(const sensor_msgs::PointCloud2& msg, int cameraNumber){
   std::cout << "got a PointCloud2 ROS message in director cpp for camera " << cameraNumber << std::endl;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>() );
   pcl::fromROSMsg(msg, *cloud);
   vtkSmartPointer<vtkPolyData> polyData = PolyDataFromPointCloud2Message(cloud);
   QMutexLocker locker(&this->mPolyDataMutex);
-  this->rosPolyDataMap[cameraNumber] = polyData;
+  this->rosPolyDataMapStreaming[cameraNumber] = polyData;
+
+  if (this->rosPolyDataMapSingleCapture.find(cameraNumber) == this->rosPolyDataMapSingleCapture.end()){
+    std::cout << "inserted to rosPolyDataMapSingleCapture for camera " << cameraNumber << std::endl;
+    this->rosPolyDataMapSingleCapture[cameraNumber] = polyData;
+  }
   std::cout << "decoded PointCloud2Message " << std::endl;
 }
 
@@ -358,6 +367,25 @@ void ddPointCloudLCM::onPointCloud2RosMessageTest(const sensor_msgs::PointCloud2
   QMutexLocker locker(&this->mPolyDataMutex);
   this->rosPolyData = polyData;
   std::cout << "decoded PointCloud2Message " << std::endl;
+}
+
+void ddPointCloudLCM::collectEnsensoPointclouds(){
+  std::cout << "waiting for ensenso pointclouds . . . \n";
+  QMutexLocker locker(&this->mPolyDataMutex);
+  rosPolyDataMapSingleCapture.clear();
+  locker.unlock();
+  int mapSize = 0;
+  while (true){
+    locker.relock();
+    mapSize = rosPolyDataMapSingleCapture.size();
+    if (mapSize == 4){
+      break;
+    }
+    locker.unlock();
+    std::cout << "waiting for more pointclouds, mapSize = " << mapSize << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
 }
 
 
@@ -411,7 +439,13 @@ void ddPointCloudLCM::getRosPointCloud(vtkPolyData* polyDataRender)
 void ddPointCloudLCM::getRosPointCloud(vtkPolyData* polyDataRender, int cameraNumber)
 {
   QMutexLocker locker(&this->mPolyDataMutex);
-  polyDataRender->ShallowCopy(this->rosPolyDataMap[cameraNumber]);
+  polyDataRender->ShallowCopy(this->rosPolyDataMapStreaming[cameraNumber]);
+}
+
+void ddPointCloudLCM::getRosPointCloudFromSingleCapture(vtkPolyData* polyDataRender, int cameraNumber)
+{
+  QMutexLocker locker(&this->mPolyDataMutex);
+  polyDataRender->ShallowCopy(this->rosPolyDataMapSingleCapture[cameraNumber]);
 }
 
 //-----------------------------------------------------------------------------

@@ -56,6 +56,8 @@ public:
   qint64 getPointCloudFromPointCloud(vtkPolyData* polyDataRender);
   void getRosPointCloud(vtkPolyData* polyDataRender);
   void getRosPointCloud(vtkPolyData* polyDataRender, int cameraNumber);
+  void getRosPointCloudFromSingleCapture(vtkPolyData* polyDataRender, int cameraNumber);
+  void collectEnsensoPointclouds();
 
   QStringList getLidarNames() const;
   QString getLidarFriendlyName(const QString& lidarName);
@@ -89,7 +91,8 @@ protected:
 
   vtkSmartPointer<vtkPolyData> mPolyData;
   vtkSmartPointer<vtkPolyData> rosPolyData;
-  std::map<int, vtkSmartPointer<vtkPolyData>> rosPolyDataMap;
+  std::map<int, vtkSmartPointer<vtkPolyData>> rosPolyDataMapStreaming;
+  std::map<int, vtkSmartPointer<vtkPolyData>> rosPolyDataMapSingleCapture;
   int64_t mUtime;
   QMutex mPolyDataMutex;
 
