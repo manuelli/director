@@ -571,6 +571,7 @@ class TreeViewer(object):
 
         self.setDefaultColorBy(item)
         item.actor.SetUserTransform(geomTransform)
+        vis.addChildFrame(item)
 
         return path
 
